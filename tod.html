@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Universe Already Knew</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #010103;
+            font-family: 'Cinzel', 'Didot', 'Georgia', serif;
+            color: #fafafa;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .overlay-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 85%;
+            max-width: 900px;
+            opacity: 0;
+            transition: opacity 2.5s cubic-bezier(0.25, 1, 0.5, 1);
+            letter-spacing: 5px;
+            line-height: 2;
+            font-weight: 300;
+        }
+
+        .overlay-text.visible {
+            opacity: 1;
+        }
+
+        .narration-line {
+            font-size: 1.45rem;
+            margin-bottom: 25px;
+            color: #f0f0ff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            min-height: 2rem;
+        }
+
+        .sub-narration {
+            font-size: 1.15rem;
+            color: #c8c8e6;
+            font-style: italic;
+            line-height: 2;
+        }
+
+        #reveal-name {
+            font-size: 4.5rem;
+            font-weight: 300;
+            letter-spacing: 16px;
+            color: #fffaf0;
+            text-shadow: 0 0 40px rgba(255, 220, 120, 0.6), 0 0 70px rgba(255, 215, 0, 0.3);
+            display: inline-block;
+            opacity: 0;
+            transition: opacity 5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #reveal-name.glow {
+            opacity: 1;
+        }
+
+        /* Frosted Premium Glass Countdown Card */
+        .glass-card {
+            background: rgba(6, 8, 20, 0.55);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 45px 35px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(255, 255, 255, 0.03);
+            max-width: 480px;
+            width: 90%;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translate(-50%, -42%) scale(0.96);
+            transition: opacity 2.5s cubic-bezier(0.25, 1, 0.5, 1), transform 2.5s cubic-bezier(0.25, 1, 0.5, 1);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            text-align: center;
+        }
+
+        .glass-card.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .glass-card h2 {
+            font-size: 1.85rem;
+            margin-bottom: 30px;
+            color: #ffdca0;
+            font-weight: 300;
+            letter-spacing: 4px;
+        }
+
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 35px;
+        }
+
+        .countdown-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 18px 5px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .countdown-value {
+            font-size: 1.9rem;
+            font-weight: 300;
+            color: #ffffff;
+            display: block;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .countdown-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9da1c0;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .glass-card p {
+            font-size: 0.98rem;
+            color: #dcdcef;
+            line-height: 1.8;
+            margin-top: 12px;
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+
+        /* Launcher Entry Screen */
+        #audio-prompt {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #020206;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 2.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .prompt-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            padding: 16px 45px;
+            font-size: 0.95rem;
+            letter-spacing: 5px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .prompt-btn:hover {
+            background: #ffffff;
+            color: #020206;
+            box-shadow: 0 0 35px rgba(255,255,255,0.25);
+            transform: scale(1.02);
+        }
+
+        .prompt-tagline {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #8385a8;
+            letter-spacing: 3px;
+            font-style: italic;
+            text-align: center;
+            width: 85%;
+        }
+
+        #interactive-star {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            z-index: 10;
+            pointer-events: auto;
+            display: none;
+            transform: translate(-50%, -50%);
+        }
+
+        #interactive-star::before {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #fff5d0;
+            border-radius: 50%;
+            top: 23px;
+            left: 23px;
+            box-shadow: 0 0 25px #ffcc00, 0 0 50px #ffffff;
+            animation: cinematicPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes cinematicPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 35px #ffcc00, 0 0 65px #ffffff; }
+        }
+
+        @media(max-width: 600px) {
+            .narration-line { font-size: 1.15rem; min-height: 2.5rem; }
+            .sub-narration { font-size: 0.95rem; }
+            #reveal-name { font-size: 2.8rem; letter-spacing: 8px; }
+            .glass-card { padding: 30px 20px; }
+            .countdown-value { font-size: 1.4rem; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="audio-prompt">
+        <button class="prompt-btn">ENTER THE UNIVERSE</button>
+        <div class="prompt-tagline">"Among billions of stars... there was only one destination."</div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="universeCanvas"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        <div id="text-scene-0" class="overlay-text">
+            <div class="narration-line" id="t0-1"></div>
+            <div class="narration-line" id="t0-2"></div>
+            <div class="narration-line" id="t0-3"></div>
+        </div>
+
+        <div id="text-scene-1" class="overlay-text">
+            <div class="narration-line" id="t1-1"></div>
+            <div class="narration-line" id="t1-2"></div>
+        </div>
+
+        <div id="text-scene-2" class="overlay-text">
+            <div class="narration-line" id="t2-1"></div>
+            <div class="narration-line" id="t2-2"></div>
+        </div>
+
+        <div id="text-scene-4" class="overlay-text">
+            <div class="narration-line" id="t4-1"></div>
+        </div>
+
+        <div id="text-scene-5" class="overlay-text">
+            <div id="reveal-name"></div>
+        </div>
+
+        <div id="text-scene-7" class="overlay-text">
+            <div class="narration-line" id="t7-1"></div>
+            <div class="narration-line" id="t7-2"></div>
+            <div class="narration-line" id="t7-3"></div>
+        </div>
+
+        <div id="interactive-star"></div>
+
+        <div class="glass-card" id="countdown-card">
+            <h2>Only A Few More Nights...</h2>
+            <div class="countdown-grid">
+                <div class="countdown-item">
+                    <span class="countdown-value" id="days">00</span>
+                    <span class="countdown-label">Days</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-value" id="hours">00</span>
+                    <span class="countdown-label">Hours</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-value" id="minutes">00</span>
+                    <span class="countdown-label">Mins</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-value" id="seconds">00</span>
+                    <span class="countdown-label">Secs</span>
+                </div>
+            </div>
+            <p>"Some moments are worth waiting for."</p>
+            <p style="font-size: 0.88rem; margin-top: 8px; color: #aaaad0; font-weight: 300;">The most beautiful ones always are.</p>
+        </div>
+
+        <div id="text-scene-final" class="overlay-text">
+            <div class="narration-line" id="tf-1"></div>
+            <div class="narration-line" id="tf-2"></div>
+            <div class="narration-line" id="tf-3"></div>
+            <div class="sub-narration" id="tf-4" style="margin-top: 35px; opacity:0; transition: opacity 3.5s ease-out;"></div>
+            <div class="narration-line" id="tf-5" style="margin-top: 55px; font-size: 1.65rem; color: #ffffff;"></div>
+        </div>
+    </div>
+
+    <script>
+        // TARGET DATE RECTIFICATION: July 4th Dynamic Target Auto-Year Evaluator
+        function getNextJuly4Date() {
+            const now = new Date();
+            let targetYear = now.getFullYear();
+            let candidate = new Date(`July 4, ${targetYear} 00:00:00`);
+            if (now > candidate) {
+                candidate = new Date(`July 4, ${targetYear + 1} 00:00:00`);
+            }
+            return candidate;
+        }
+        const BIRTHDAY_TARGET = getNextJuly4Date();
+
+        const canvas = document.getElementById('universeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // Audio System Generator
+        class Soundscape {
+            constructor() { this.ctx = null; }
+            init() {
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.startSpacePad();
+                } catch(e){}
+            }
+            startSpacePad() {
+                if(!this.ctx) return;
+                let bufferSize = 3 * this.ctx.sampleRate,
+                    noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate),
+                    output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+                let whiteNoise = this.ctx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                whiteNoise.loop = true;
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, this.ctx.currentTime);
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                whiteNoise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                whiteNoise.start();
+            }
+            playPiano(freq, delay = 0, duration = 3.5, volume = 0.15) {
+                if(!this.ctx) return;
+                setTimeout(() => {
+                    let now = this.ctx.currentTime;
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now); osc.stop(now + duration);
+                }, delay * 1000);
+            }
+            playStringPad(freq, duration = 5, volume = 0.05) {
+                if(!this.ctx) return;
+                let now = this.ctx.currentTime;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(volume, now + 1.5);
+                gain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + duration);
+            }
+        }
+
+        const audio = new Soundscape();
+
+        let globalTime = 0;
+        let currentScene = -1; 
+        let camera = { x: 0, y: 0, zoom: 0.05, targetZoom: 0.05 };
+
+        // 1500 Ambient Stars Background Pool
+        const stars = [];
+        for(let i=0; i<1500; i++) {
+            stars.push({
+                x: (Math.random() - 0.5) * 4000,
+                y: (Math.random() - 0.5) * 4000,
+                z: Math.random() * 2000,
+                size: Math.random() * 1.4 + 0.4,
+                color: Math.random() > 0.85 ? '#ffeacc' : '#ffffff',
+                opacity: Math.random() * 0.6 + 0.4,
+                angle: Math.random() * Math.PI * 2,
+                orbitRadius: Math.random() * 1000 + 100
+            });
+        }
+
+        // SCENE 1: Spiral Milky Way & Nebulas Assets
+        const galaxyArmsCount = 3;
+        const galaxyParticles = [];
+        for(let i=0; i<600; i++) {
+            let r = Math.random() * 500 + 10;
+            let arm = i % galaxyArmsCount;
+            let theta = (arm * ((2 * Math.PI) / galaxyArmsCount)) + (r * 0.015) + (Math.random() * 0.4);
+            galaxyParticles.push({
+                r: r,
+                initialTheta: theta,
+                size: Math.random() * 2 + 0.5,
+                color: Math.random() > 0.5 ? '#aaccff' : '#ffccfa'
+            });
+        }
+
+        // SCENE 2 & 3: High-Fidelity Solar System & Earth Generation Elements
+        // Let's create proper planetary objects orbiting around a central sun space coordinate
+        const solarPlanets = [
+            { distance: 130, size: 4, speed: 0.015, color: '#a5a5a5' }, // Mercury
+            { distance: 180, size: 7, speed: 0.011, color: '#e3bb76' }, // Venus
+            { distance: 250, size: 12, speed: 0.008, color: '#4b70dd', isEarth: true }, // Earth
+            { distance: 320, size: 6, speed: 0.006, color: '#cc5a37' }, // Mars
+            { distance: 440, size: 16, speed: 0.004, color: '#d4a373' }  // Jupiter
+        ];
+
+        // Nature elements arrays
+        const butterflies = [];
+        const birds = [];
+        for(let i=0; i<15; i++) {
+            butterflies.push({ x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight, size: Math.random()*2+2, phase: Math.random()*10 });
+        }
+        for(let i=0; i<5; i++) {
+            birds.push({ x: -50 - Math.random()*100, y: 150 + Math.random()*150, size: Math.random()*3+3, speedX: Math.random()*1+1 });
+        }
+
+        // NAVYA Constellation Point Mappings
+        const letterOffsets = [-140, -70, 0, 70, 140];
+        const letterDotMatrices = [
+            [[0,0], [0,15], [0,30], [0,45], [0,60], [4,15], [8,30], [12,45], [16,0], [16,15], [16,30], [16,45], [16,60]], // N
+            [[8,0], [4,15], [12,15], [0,30], [16,30], [4,30], [12,30], [0,45], [16,45], [0,60], [16,60]], // A
+            [[0,0], [16,0], [2,15], [14,15], [4,30], [12,30], [6,45], [10,45], [8,60]], // V
+            [[0,0], [16,0], [2,15], [14,15], [5,30], [11,30], [8,42], [8,52], [8,64]], // Y
+            [[8,0], [4,15], [12,15], [0,30], [16,30], [4,30], [12,30], [0,45], [16,45], [0,60], [16,60]]  // A
+        ];
+
+        const constellationPoints = [];
+        letterDotMatrices.forEach((matrix, index) => {
+            const hOffset = letterOffsets[index];
+            matrix.forEach(pt => {
+                constellationPoints.push({ targetX: hOffset + pt[0]*2.8 - 22, targetY: pt[1]*2.8 - 85 });
+            });
+        });
+
+        // Shooting Star utilities
+        const shootingStars = [];
+        function addShootingStar() {
+            shootingStars.push({ x: Math.random()*width, y: Math.random()*height*0.3, length: Math.random()*100+50, speed: Math.random()*10+10, opacity: 1 });
+        }
+
+        // Typewriter sequence helper
+        function typeWriter(elementId, text, speed, callback) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = ''; let i = 0;
+            function type() {
+                if (i < text.length) { el.innerHTML += text.charAt(i); i++; setTimeout(type, speed); }
+                else if(callback) { setTimeout(callback, 800); }
+            }
+            type();
+        }
+
+        function showSceneText(id) {
+            document.querySelectorAll('.overlay-text').forEach(el => el.classList.remove('visible'));
+            if(id) document.getElementById(id).classList.add('visible');
+        }
+
+        // Timeline Schedule Management
+        function runCinematicTimeline() {
+            currentScene = 0; camera.targetZoom = 0.85;
+            
+            // Scene 0: Opening
+            setTimeout(() => {
+                showSceneText('text-scene-0');
+                audio.playPiano(261.63, 0, 3.5, 0.15);
+                typeWriter('t0-1', "Before every sunrise...", 75, () => {
+                    audio.playPiano(329.63, 0.4, 3.5, 0.12);
+                    typeWriter('t0-2', "Before every dream...", 75, () => {
+                        audio.playPiano(392.00, 0.4, 3.5, 0.12);
+                        typeWriter('t0-3', "The universe quietly writes another story.", 65);
+                    });
+                });
+            }, 3000);
+
+            // Scene 1: Galaxies / Milky Way Reveal
+            setTimeout(() => {
+                currentScene = 1; camera.targetZoom = 1.3;
+                showSceneText('text-scene-1');
+                audio.playStringPad(220.00, 7, 0.05);
+                typeWriter('t1-1', "Among billions of galaxies...", 75, () => {
+                    audio.playPiano(440.00, 0.4, 3.5, 0.1);
+                    typeWriter('t1-2', "Every star has its place.", 75);
+                });
+            }, 16000);
+
+            // Scene 2: Solar System Reveal & Rarest Light Focus
+            setTimeout(() => {
+                currentScene = 2; camera.targetZoom = 1.9;
+                showSceneText('text-scene-2');
+                audio.playStringPad(261.63, 8, 0.07);
+                typeWriter('t2-1', "Sometimes...", 85, () => {
+                    typeWriter('t2-2', "The universe lingers a little longer... On the rarest lights.", 70);
+                    audio.playPiano(523.25, 0.2, 4.5, 0.16);
+                });
+            }, 31000);
+
+            // Scene 3 & 4: Deep Zoom Into Earth Atmosphere Horizon
+            setTimeout(() => {
+                currentScene = 3; camera.targetZoom = 4.2;
+                showSceneText(null);
+                audio.playPiano(349.23, 1, 4.5, 0.1);
+            }, 47000);
+
+            setTimeout(() => {
+                currentScene = 4; showSceneText('text-scene-4');
+                typeWriter('t4-1', "Every journey... Leads somewhere.", 75);
+                audio.playPiano(392.00, 0.3, 3.5, 0.1);
+            }, 55000);
+
+            // Scene 5 & 6: Constellation Formation Target
+            setTimeout(() => {
+                currentScene = 5; camera.targetZoom = 1.05;
+                showSceneText('text-scene-5');
+                const nameEl = document.getElementById('reveal-name');
+                nameEl.classList.add('glow');
+                typeWriter('reveal-name', "NAVYA", 320, () => {
+                    currentScene = 6;
+                    audio.playStringPad(329.63, 12, 0.09);
+                });
+            }, 66000);
+
+            // Scene 7: Realization Prose
+            setTimeout(() => {
+                currentScene = 7; showSceneText('text-scene-7');
+                typeWriter('t7-1', "The universe wasn't trying to find you...", 70, () => {
+                    typeWriter('t7-2', "Because you were never lost.", 75, () => {
+                        typeWriter('t7-3', "It simply wanted to remind you... That among billions of stars... There is only one you.", 65);
+                    });
+                });
+            }, 84000);
+
+            // Scene 8: Clickable Glowing Star Spawner
+            setTimeout(() => {
+                currentScene = 8; showSceneText(null);
+                const interactiveStarEl = document.getElementById('interactive-star');
+                interactiveStarEl.style.left = `${width * 0.5}px`;
+                interactiveStarEl.style.top = `${height * 0.55}px`;
+                interactiveStarEl.style.display = 'block';
+            }, 109000);
+        }
+
+        document.getElementById('interactive-star').addEventListener('click', () => {
+            document.getElementById('interactive-star').style.display = 'none';
+            audio.playPiano(783.99, 0, 5, 0.22);
+            currentScene = 9;
+            document.getElementById('countdown-card').classList.add('active');
+
+            setTimeout(() => {
+                document.getElementById('countdown-card').classList.remove('active');
+                runFinalScene();
+            }, 13000);
+        });
+
+        function runFinalScene() {
+            currentScene = 10; camera.targetZoom = 0.35; // Majestic Zoom Out To Reveal Everything Again
+            showSceneText('text-scene-final');
+            typeWriter('tf-1', "No matter how vast the universe becomes...", 80, () => {
+                typeWriter('tf-2', "There will always be one star...", 80, () => {
+                    typeWriter('tf-3', "Quietly shining for you.", 90, () => {
+                        setTimeout(() => {
+                            const p4 = document.getElementById('tf-4');
+                            p4.innerHTML = "Perhaps...<br>the universe already knew...<br>exactly where it wanted to be.";
+                            p4.style.opacity = 1;
+                        }, 2500);
+                        setTimeout(() => {
+                            addShootingStar();
+                            document.getElementById('tf-5').innerHTML = "See you on your birthday. 🤍";
+                        }, 9500);
+                    });
+                });
+            });
+        }
+
+        // Live Countdown Clock Calculation Engine
+        function updateCountdown() {
+            const diff = BIRTHDAY_TARGET - new Date();
+            if (diff <= 0 || isNaN(diff)) return;
+            document.getElementById('days').innerText = Math.floor(diff / (1000*60*60*24));
+            document.getElementById('hours').innerText = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            document.getElementById('minutes').innerText = Math.floor((diff % (1000*60*60)) / (1000*60));
+            document.getElementById('seconds').innerText = Math.floor((diff % (1000*60)) / 1000);
+        }
+        setInterval(updateCountdown, 1000);
+
+        // --- EXPLICIT CANVAS GRAPHICS ENGINE DISPATCH LOOP ---
+        function render() {
+            globalTime += 0.008;
+            camera.zoom += (camera.targetZoom - camera.zoom) * 0.02;
+            
+            ctx.fillStyle = '#020205';
+            ctx.fillRect(0, 0, width, height);
+
+            // 1. Render Background Field Stars
+            stars.forEach(star => {
+                let alpha = star.opacity + Math.sin(globalTime * 3) * 0.2;
+                ctx.fillStyle = star.color;
+                ctx.globalAlpha = Math.max(0.1, Math.min(1, alpha));
+                let sx = width/2 + star.x * camera.zoom;
+                let sy = height/2 + star.y * camera.zoom;
+                ctx.beginPath(); ctx.arc(sx, sy, star.size, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // 2. Render Milky Way Spiral Galaxy (Scene 1 & Outro Scene 10 Focus)
+            if (currentScene === 1 || currentScene === 10 || currentScene === 0) {
+                ctx.save();
+                ctx.translate(width/2, height/2);
+                ctx.rotate(globalTime * 0.15);
+                galaxyParticles.forEach(p => {
+                    let lx = p.r * Math.cos(p.initialTheta) * camera.zoom;
+                    let ly = p.r * Math.sin(p.initialTheta) * camera.zoom;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(lx, ly, p.size * (camera.zoom + 0.5), 0, Math.PI*2); ctx.fill();
+                });
+                ctx.restore();
+            }
+
+            // 3. Render Solar System & Dynamic Earth (Scene 2, 3, 4, 10 Focus)
+            if (currentScene >= 2) {
+                let centerX = width / 2;
+                let centerY = height / 2;
+
+                // Center Golden Sun Core
+                let sunRadius = 30 * camera.zoom;
+                if(sunRadius > 2) {
+                    let sunGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, sunRadius * 2);
+                    sunGlow.addColorStop(0, '#fff3cc');
+                    sunGlow.addColorStop(0.3, '#ffb700');
+                    sunGlow.addColorStop(1, 'transparent');
+                    ctx.fillStyle = sunGlow;
+                    ctx.beginPath(); ctx.arc(centerX, centerY, sunRadius * 2, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Render Orbit Paths & Planets
+                solarPlanets.forEach(p => {
+                    let currentOrbitAngle = globalTime * p.speed * 4;
+                    let px = centerX + Math.cos(currentOrbitAngle) * p.distance * camera.zoom;
+                    let py = centerY + Math.sin(currentOrbitAngle) * p.distance * camera.zoom;
+
+                    // Draw sleek orbit track path lines
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                    ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.arc(centerX, centerY, p.distance * camera.zoom, 0, Math.PI*2); ctx.stroke();
+
+                    if (p.isEarth) {
+                        // SCENE 3 & 4 Atmosphere Zoom Mode or standard planet mode
+                        if (currentScene === 3 || currentScene === 4) {
+                            // Immersive full-canvas horizon presentation
+                            let hX = width * 0.5;
+                            let hY = height * 1.6 - (camera.zoom * 20);
+                            let hR = width * 0.9;
+                            let earthGrad = ctx.createRadialGradient(hX, hY, hR * 0.65, hX, hY, hR);
+                            earthGrad.addColorStop(0, '#040b24');
+                            earthGrad.addColorStop(0.75, '#142552');
+                            earthGrad.addColorStop(0.92, '#3a66b8');
+                            earthGrad.addColorStop(0.96, '#ffdfa0'); // Soft Sunrise Glow Line
+                            earthGrad.addColorStop(1, 'transparent');
+                            ctx.fillStyle = earthGrad;
+                            ctx.beginPath(); ctx.arc(hX, hY, hR, 0, Math.PI*2); ctx.fill();
+
+                            // Butterflies and Birds Flight Updates
+                            butterflies.forEach(b => {
+                                b.x += Math.sin(globalTime + b.phase)*0.5; b.y -= 0.3; if(b.y < 0) b.y = height;
+                                ctx.fillStyle = 'rgba(255,230,170,0.6)';
+                                ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI*2); ctx.fill();
+                            });
+                            birds.forEach(bird => {
+                                bird.x += bird.speedX; if(bird.x > width + 50) bird.x = -50;
+                                ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath();
+                                ctx.moveTo(bird.x - bird.size, bird.y); ctx.lineTo(bird.x, bird.y - bird.size*0.5); ctx.lineTo(bird.x + bird.size, bird.y); ctx.stroke();
+                            });
+                        } else {
+                            // Standard scale view Earth with realistic orbiting moon and atmospheric rings
+                            let rSize = p.size * camera.zoom;
+                            if(rSize > 1) {
+                                ctx.fillStyle = '#3a66b8'; // Deep blue oceans base
+                                ctx.beginPath(); ctx.arc(px, py, rSize, 0, Math.PI*2); ctx.fill();
+                                // Moving green/white cloud patches overlay accent
+                                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                                ctx.beginPath(); ctx.arc(px + rSize*0.2, py - rSize*0.1, rSize * 0.5, 0, Math.PI*2); ctx.fill();
+                                // Satellite Moon orbiting the Earth
+                                let moonAngle = globalTime * 2;
+                                let mx = px + Math.cos(moonAngle) * (rSize * 2.2);
+                                let my = py + Math.sin(moonAngle) * (rSize * 2.2);
+                                ctx.fillStyle = '#cccccc';
+                                ctx.beginPath(); ctx.arc(mx, my, rSize * 0.25, 0, Math.PI*2); ctx.fill();
+                            }
+                        }
+                    } else {
+                        // Standard Planet Body render
+                        let pr = p.size * camera.zoom;
+                        if(pr > 0.8) {
+                            ctx.fillStyle = p.color;
+                            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+                        }
+                    }
+                });
+            }
+
+            // 4. Migration Target into NAVYA Star Constellation (Scenes 6-9)
+            if ((currentScene === 6 || currentScene === 7 || currentScene === 8 || currentScene === 9) && constellationPoints.length > 0) {
+                stars.forEach((star, idx) => {
+                    if (idx < constellationPoints.length) {
+                        let pt = constellationPoints[idx];
+                        star.x += (pt.targetX - star.x) * 0.03;
+                        star.y += (pt.targetY - star.y) * 0.03;
+                    }
+                });
+            }
+
+            // 5. Outro Finale chosen single star sequence handler
+            if (currentScene === 10) {
+                let chosenStar = stars[0];
+                chosenStar.x += (140 - chosenStar.x) * 0.04;
+                chosenStar.y += (-15 - chosenStar.y) * 0.04;
+                let sx = width/2 + chosenStar.x * camera.zoom;
+                let sy = height/2 + chosenStar.y * camera.zoom;
+                ctx.fillStyle = '#ffdf9a';
+                ctx.beginPath(); ctx.arc(sx, sy, 4 + Math.sin(globalTime*5)*1.5, 0, Math.PI*2); ctx.fill();
+            }
+
+            // Render Shooting Stars Spawner Core
+            if(Math.random() < 0.008) addShootingStar();
+            for(let i = shootingStars.length - 1; i >= 0; i--) {
+                let s = shootingStars[i]; s.x += s.speed; s.y += s.speed*0.4; s.opacity -= 0.015;
+                ctx.strokeStyle = `rgba(255,255,255,${s.opacity})`; ctx.beginPath();
+                ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.length, s.y - s.length*0.4); ctx.stroke();
+                if(s.opacity <= 0) shootingStars.splice(i, 1);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('audio-prompt').addEventListener('click', () => {
+            document.getElementById('audio-prompt').style.opacity = '0';
+            setTimeout(() => { document.getElementById('audio-prompt').style.display = 'none'; }, 2000);
+            audio.init(); runCinematicTimeline();
+        });
+
+        render();
+    </script>
+</body>
+</html>
